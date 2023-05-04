@@ -3,6 +3,13 @@
 
 #include "RunnerCharacter.h"
 
+#include "Spikes.h"
+#include "WallSpike.h"
+
+#include "Spikes.h"
+#include "WallSpike.h"
+#include "Engine.h"
+
 
 // Sets default values
 ARunnerCharacter::ARunnerCharacter()
@@ -38,6 +45,8 @@ void ARunnerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ARunnerCharacter::OnOverlapBeging);
+	
 	CanMove = true;
 }
 
@@ -74,12 +83,27 @@ void ARunnerCharacter::MoveRight(float value)
 
 void ARunnerCharacter::RestartLevel()
 {
-	
+	UGameplayStatics::OpenLevel(this, FName(*GetWorld()->GetName()));
 }
 
 void ARunnerCharacter::OnOverlapBeging(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
-	
+	if(OtherActor != nullptr)
+	{
+		ASpikes* WallSpike = Cast<AWallSpike>(OtherActor);
+		ASpikes* Spike = Cast<ASpikes>(OtherActor);
+
+		if(WallSpike || Spike)
+		{
+			GetMesh()->Deactivate();
+			GetMesh()->SetVisibility(false);
+			
+			CanMove = false;
+
+			FTimerHandle UnusedHandle;
+			GetWorldTimerManager().SetTimer(UnusedHandle, this, &ARunnerCharacter::RestartLevel, 2.f, false);
+		}
+	}
 }
 
